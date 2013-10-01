@@ -1,7 +1,11 @@
 mapserverSldGenerator
 =====================
 
-Script for mapserver generating SLD including complete filters based on mapfile.
+Script for mapserver generating SLD including complete FES filters based on mapfile.
+
+Needs mapscript to run.
+
+Assumes writing is allowed to /tmp.
 
 Highly recommend running xmllint to validate result:
 

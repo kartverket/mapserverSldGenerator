@@ -9,6 +9,7 @@ Still buggy. Please check/validate the results.
 '''
 import mapscript
 import sys
+import tempfile
 from pyparsing import nestedExpr
 
 # sld-library should probably be used at a later point
@@ -169,10 +170,10 @@ def layerWriter(layer, layerNr):
   layerClassItem=layer.classitem
 
 
- sldFile=open('/tmp/' + service + '.' + layer.name.replace('/','_') + '.sld','wb')
- sldFile.write(layer.generateSLD())
- sldFile.close()
- sldFile=open('/tmp/' + service + '.' + layer.name.replace('/','_') + '.sld','rb')
+ tmpSldFile=tempfile.NamedTemporaryFile() 
+ tmpSldFile.write(layer.generateSLD())
+ sldFile=open(tmpSldFile.name)
+ tmpSldFile.close()
  ruleBool=False
  
  for tmpKlasse in range(0,layer.numclasses):

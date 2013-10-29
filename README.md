@@ -1,9 +1,13 @@
 mapserverSldGenerator
 =====================
 
+Usage:
+
+	sldGen.py <mapfile>
+
 Script for mapserver generating SLD including complete FES filters based on mapfile.
 
-Needs mapscript to run.
+Needs mapscript to run. Prints to stdout.
 
 
 Loads mapfile and uses layer.generateSLD() from mapscript to write a temporary file.

@@ -17,4 +17,4 @@ When it finds a Filter, it tries to generate a new Filter based on the classific
 
 Highly recommend running xmllint to validate result:
 
-	xmllint --noout --schema http://schemas.opengis.net/sld/1.0.0/StyledLayerDescriptor.xsd $sldFile
+	xmllint --noout --schema http://schemas.opengis.net/sld/1.0.0/StyledLayerDescriptor.xsd $sldfile

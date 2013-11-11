@@ -3,7 +3,7 @@ mapserverSldGenerator
 
 Usage:
 
-	sldGen.py <mapfile>
+	sldGen.py $mapfile > sldfile.sld
 
 Script for mapserver generating SLD including complete FES filters based on mapfile.
 

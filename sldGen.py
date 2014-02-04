@@ -11,6 +11,7 @@ import mapscript
 import sys
 import tempfile
 from pyparsing import nestedExpr
+import os
 
 # sld-library should probably be used at a later point
 #import sld
@@ -209,9 +210,9 @@ def layerWriter(layer, layerNr):
    layerClassWriter(layer, filterString, layerClassItem, layerClassNr)
    layerClassNr+=1
    continue
-  elif (layerNr > 0) & (line.startswith('<StyledLayerDescriptor')) & (outputDir != ''):
+  elif (layerNr > 0) & (line.startswith('<StyledLayerDescriptor')) & (filePerLayer==False):
    continue
-  elif line.startswith('</StyledLayerDescriptor') & (outputDir != ''):
+  elif line.startswith('</StyledLayerDescriptor') & (filePerLayer==False):
    continue
   elif greyscale and line.startswith('<CssParameter'):
    if ('-width' in line) or ('-dasharray' in line):
@@ -278,10 +279,10 @@ def run(mapfile):
    layerWriter(layer, layerNr)
    outputFile.close()
   else:
-   outputFile=open( outputFile,'a')
+#   outputFile=open( outputFile,'a')
    layerWriter(layer, layerNr)
-  if not filePerLayer:
-   outputFile.write('</StyledLayerDescriptor>')
+ if not filePerLayer:
+  outputFile.write('</StyledLayerDescriptor>')
 
 # Fetching mapfile from commandline
 if len(sys.argv) > 1:
@@ -291,11 +292,12 @@ if len(sys.argv) > 1:
   if '-g' in sys.argv:
    greyscale=True
   if '-f' in sys.argv:
-#   outputFile=open(sys.argv[sys.argv.index('-f')+1],'w')
+   outputFile=open(sys.argv[sys.argv.index('-f')+1],'w')
    run(mapfile)
    outputFile.close()
   elif '-fpl' in sys.argv:
    filePerLayer=True
    outputDir=sys.argv[sys.argv.index('-fpl')+1]
-   outputFile=open(sys.argv[sys.argv.index('-fpl')+1] + '/temp.sld','w')
+   if not os.path.exists(outputDir):
+    os.makedirs(outputDir)
    run(mapfile)

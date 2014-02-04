@@ -29,6 +29,24 @@ geList=['>=','ge']
 
 # Global variables. Need to be removed.
 service=''
+greyscale=False
+filePerLayer=False
+outputDir=''
+#outputFile=''
+
+def grayscaler(line):
+ colorIndex=line.find('#')
+ red_v=line[colorIndex+1:colorIndex+3]
+ blue_v=line[colorIndex+3:colorIndex+5]
+ green_v=line[colorIndex+5:colorIndex+7]
+ red_m=0.299
+ green_m=0.587
+ blue_m=0.114
+ grey=''
+ grey=str(hex(int(int(red_v,16)*red_m+int(green_v,16)*green_m+int(blue_v,16)*blue_m))).replace('0x','')
+ if len(grey)<2:
+  grey='0'+grey
+ outputFile.write(line.replace('#'+red_v+blue_v+green_v,'#'+grey+grey+grey))
 
 def nestLoopCol(nList,ll):
  '''Secondary loop-handler'''
@@ -52,9 +70,9 @@ Main loop for translating SQL to FES
     tmpAndor='And'
     if str(nList[1])=='or':
      tmpAndor='Or'
-    sys.stdout.write(tabberAndor(ll) + '<ogc:' + tmpAndor + '>\n')
+    outputFile.write(tabberAndor(ll) + '<ogc:' + tmpAndor + '>\n')
     nestLoopCol(nList,ll)
-    sys.stdout.write(tabberAndor(ll) + '</ogc:' + tmpAndor + '>\n')
+    outputFile.write(tabberAndor(ll) + '</ogc:' + tmpAndor + '>\n')
     del nList[1]
    else:
     if len(nList)>1:
@@ -69,16 +87,16 @@ Main loop for translating SQL to FES
       tmpOperator='PropertyIsGreaterThanOrEqualTo'
      elif (nList[1] in leList):
       tmpOperator='PropertyIsLessThanOrEqualTo'
-     sys.stdout.write(tabber(ll+1) + '<ogc:' + tmpOperator + '>\n')
+     outputFile.write(tabber(ll+1) + '<ogc:' + tmpOperator + '>\n')
      for n in range(0,3):
       if n == 0:
-       sys.stdout.write(tabber(ll+2) + '<ogc:PropertyName>' + str(nList[n]).replace('"','').replace("'","") + '</ogc:PropertyName>\n')
+       outputFile.write(tabber(ll+2) + '<ogc:PropertyName>' + str(nList[n]).replace('"','').replace("'","") + '</ogc:PropertyName>\n')
       elif n == 2:
        try:
-        sys.stdout.write(tabber(ll+2) + '<ogc:Literal>' + str(nList[n]).replace("'","").replace('"','') + '</ogc:Literal>\n')
+        outputFile.write(tabber(ll+2) + '<ogc:Literal>' + str(nList[n]).replace("'","").replace('"','') + '</ogc:Literal>\n')
        except:
-        sys.stdout.write(tabber(ll+2) + '<ogc:Literal></ogc:Literal>\n')
-     sys.stdout.write(tabber(ll+1) + '</ogc:' + tmpOperator + '>\n')
+        outputFile.write(tabber(ll+2) + '<ogc:Literal></ogc:Literal>\n')
+     outputFile.write(tabber(ll+1) + '</ogc:' + tmpOperator + '>\n')
 
   else: 
    nestLoopCol(nList,ll)
@@ -119,9 +137,9 @@ Starts nestLoop
  loopLevel=0
 # if debug=='True':
 #  print string
- sys.stdout.write('<ogc:Filter>\n')
+ outputFile.write('<ogc:Filter>\n')
  nestLoop(mathExpr.parseString(string),0)
- sys.stdout.write('</ogc:Filter>\n')
+ outputFile.write('</ogc:Filter>\n')
 
 def cfe(c,f,e):
  '''Initiates parsing when classification is a combination of Classitem, Filter and Expression'''
@@ -175,11 +193,13 @@ def layerWriter(layer, layerNr):
  sldFile=open(tmpSldFile.name)
  tmpSldFile.close()
  ruleBool=False
+
  
  for tmpKlasse in range(0,layer.numclasses):
   layerClass=layer.getClass(layerClassNr)
   if layerClass is None:
    return
+  # Comment out this to get more layers. Might look ugly.
   elif layerClass.numstyles == 0:
    return
   
@@ -189,12 +209,18 @@ def layerWriter(layer, layerNr):
    layerClassWriter(layer, filterString, layerClassItem, layerClassNr)
    layerClassNr+=1
    continue
-  elif (layerNr > 0) & (line.startswith('<StyledLayerDescriptor')):
+  elif (layerNr > 0) & (line.startswith('<StyledLayerDescriptor')) & (outputDir != ''):
    continue
-  elif line.startswith('</StyledLayerDescriptor'):
+  elif line.startswith('</StyledLayerDescriptor') & (outputDir != ''):
    continue
+  elif greyscale and line.startswith('<CssParameter'):
+   if ('-width' in line) or ('-dasharray' in line):
+    outputFile.write(line)
+    continue
+   else:
+    grayscaler(line)
   else:
-   sys.stdout.write(line)
+   outputFile.write(line)
 
 def layerClassWriter(layer, filterString, layerClassItem, layerClassNr):
  '''Selects the method needed for writing the class based on the classifications'''
@@ -237,6 +263,7 @@ def loadMap(mapfile):
 
 def run(mapfile):
  '''Initiates SLD-generation per layer'''
+ global outputFile
  map=loadMap(mapfile)
  serviceName=map.name
  nl=''
@@ -245,15 +272,30 @@ def run(mapfile):
   layer=map.getLayer(layerNr) 
 #  if layer.type==4:
 #   continue
-  layerWriter(layer, layerNr)
- sys.stdout.write('</StyledLayerDescriptor>')
+  if filePerLayer:
+   print 'Setting outputfile to ' + layer.name + '.sld'
+   outputFile=open(outputDir + '/' + layer.name + '.sld','w')
+   layerWriter(layer, layerNr)
+   outputFile.close()
+  else:
+   outputFile=open( outputFile,'a')
+   layerWriter(layer, layerNr)
+  if not filePerLayer:
+   outputFile.write('</StyledLayerDescriptor>')
 
 # Fetching mapfile from commandline
 if len(sys.argv) > 1:
 # print(len(sys.argv))
  mapfile=sys.argv[1]
  if mapfile is not None:
-  run(mapfile)
-
-
-
+  if '-g' in sys.argv:
+   greyscale=True
+  if '-f' in sys.argv:
+#   outputFile=open(sys.argv[sys.argv.index('-f')+1],'w')
+   run(mapfile)
+   outputFile.close()
+  elif '-fpl' in sys.argv:
+   filePerLayer=True
+   outputDir=sys.argv[sys.argv.index('-fpl')+1]
+   outputFile=open(sys.argv[sys.argv.index('-fpl')+1] + '/temp.sld','w')
+   run(mapfile)

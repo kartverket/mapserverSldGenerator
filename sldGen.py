@@ -43,7 +43,6 @@ def grayscaler(line):
  red_m=0.299
  green_m=0.587
  blue_m=0.114
- grey=''
  grey=str(hex(int(int(red_v,16)*red_m+int(green_v,16)*green_m+int(blue_v,16)*blue_m))).replace('0x','')
  if len(grey)<2:
   grey='0'+grey
@@ -142,10 +141,19 @@ Starts nestLoop
  nestLoop(mathExpr.parseString(string),0)
  outputFile.write('</ogc:Filter>\n')
 
+def expressionSplitter(c,e):
+   tmpString="("
+   for value in e.split('|'):
+    tmpString=tmpString+ '(' + c + ' = ' + value.replace('/','') + ') OR '
+   return tmpString.rstrip(' OR ') + ')'
+
 def cfe(c,f,e):
  '''Initiates parsing when classification is a combination of Classitem, Filter and Expression'''
  if '[' not in e:
-  parenthesis('(('+ f.replace('"','') +') AND (' + c + ' = ' + e + '))')
+  if e[0]=='/':
+   parenthesis('(('+ f.replace('"','') +') AND (' + expressionSplitter(c,e) + '))')
+  else:
+   parenthesis('(('+ f.replace('"','') +') AND (' + e + '))')
  else:
   fe(f,e)
 
@@ -153,11 +161,7 @@ def ce(c,e):
  '''Initiates parsing when classification is a combination of Classitem and Expression'''
  if '[' not in e:
   if e[0]=='/':
-   tmpString="("
-   for value in e.split('|'):
-    tmpString=tmpString+ '(' + c + ' = ' + value.replace('/','') + ') OR '
-   tmpString=tmpString.rstrip(' OR ') + ')'
-   parenthesis(tmpString)
+   parenthesis(expressionSplitter(c,e))
   else:
    parenthesis('(' + c + ' = ' + e + ')')
  else:
@@ -210,6 +214,18 @@ def layerWriter(layer, layerNr):
    layerClassWriter(layer, filterString, layerClassItem, layerClassNr)
    layerClassNr+=1
    continue
+  elif line.startswith('<NamedLayer>'):
+   outputFile.write(line)
+   outputFile.write('<!--\n')
+   if layer.minscaledenom > 0:
+     outputFile.write('Hardcoded minscale for layer: ' + str(layer.minscaledenom) + '\n')
+   else:
+     outputFile.write('No minscale set for this layer\n')
+   if layer.maxscaledenom > 0:
+     outputFile.write('Hardcoded maxscale for layer: ' + str(layer.maxscaledenom) + '\n')
+   else:
+     outputFile.write('No maxscale set for this layer\n')
+   outputFile.write('-->\n')
   elif (layerNr > 0) & (line.startswith('<StyledLayerDescriptor')) & (filePerLayer==False):
    continue
   elif line.startswith('</StyledLayerDescriptor') & (filePerLayer==False):
@@ -274,19 +290,16 @@ def run(mapfile):
 #  if layer.type==4:
 #   continue
   if filePerLayer:
-   print 'Setting outputfile to ' + layer.name + '.sld'
    outputFile=open(outputDir + '/' + layer.name + '.sld','w')
    layerWriter(layer, layerNr)
    outputFile.close()
   else:
-#   outputFile=open( outputFile,'a')
    layerWriter(layer, layerNr)
  if not filePerLayer:
   outputFile.write('</StyledLayerDescriptor>')
 
 # Fetching mapfile from commandline
 if len(sys.argv) > 1:
-# print(len(sys.argv))
  mapfile=sys.argv[1]
  if mapfile is not None:
   if '-g' in sys.argv:
@@ -301,3 +314,15 @@ if len(sys.argv) > 1:
    if not os.path.exists(outputDir):
     os.makedirs(outputDir)
    run(mapfile)
+else:
+ print('')
+ print('Usage: ./sldGen.py $mapfile [[ -f $sldFile || -fpl $outputDir ] -g ]')
+ print('')
+ print('Required: (one or the other)')
+ print('        -f   Filename to save sld to')
+ print('        -fpl Name of directory to save sld-files (one per NamedLayer)')
+ print('')
+ print('Optional:')
+ print('        -g   Toggle greyscale')
+ print('')
+

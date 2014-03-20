@@ -1,6 +1,17 @@
 mapserverSldGenerator
 =====================
 
+Examples of SLDs generated with this tool:
+
+ABAS
+* http://labs.kartverket.no/sld/abas/abas.sld
+* http://labs.kartverket.no/sld/abas/namedlayers/
+
+Kartdata2
+* http://labs.kartverket.no/sld/kartdata2/kartdata2.sld
+* http://labs.kartverket.no/sld/kartdata2/namedlayers/
+
+
 Usage:
 
 	./sldGen.py $mapfile [[ -f $sldFile || -fpl $outputDir ] -g ]

@@ -231,7 +231,7 @@ def layerWriter(layer, layerNr):
   elif line.startswith('</StyledLayerDescriptor') & (filePerLayer==False):
    continue
   elif greyscale and line.startswith('<CssParameter'):
-   if ('-width' in line) or ('-dasharray' in line):
+   if ('-width' in line) or ('-dasharray' in line) or ('font' in line) or ('opacity' in line): 
     outputFile.write(line)
     continue
    else:
